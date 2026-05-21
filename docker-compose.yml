@@ -1,0 +1,12 @@
+services:
+  django-api:
+    container_name: django_api_c
+    build: .
+    env_file:
+      - ./.env
+    ports:
+      - "8001:8001"
+    command: "gunicorn -c deploy/gunicorn_conf.py core.project.wsgi:application"
+
+  db:
+    image: postgres:16-alpine
