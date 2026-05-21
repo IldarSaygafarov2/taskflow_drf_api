@@ -21,6 +21,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # external
+    "rest_framework",
     # apps
     "core.apps.activity_logs.apps.ActivityLogsConfig",
     "core.apps.attachments.apps.AttachmentsConfig",
@@ -29,6 +31,7 @@ INSTALLED_APPS = [
     "core.apps.projects.apps.ProjectsConfig",
     "core.apps.users.apps.UsersConfig",
     "core.apps.workspaces.apps.WorkspacesConfig",
+    "core.apps.boards.apps.BoardsConfig",
 ]
 
 MIDDLEWARE = [
@@ -63,8 +66,12 @@ WSGI_APPLICATION = "core.project.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": env.str("POSTGRES_DB"),
+        "PASSWORD": env.str("POSTGRES_PASSWORD"),
+        "HOST": env.str("POSTGRES_HOST"),
+        "PORT": env.str("POSTGRES_PORT"),
+        "USER": env.str("POSTGRES_USER"),
     }
 }
 
