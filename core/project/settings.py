@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "core.apps.users.apps.UsersConfig",
     "core.apps.workspaces.apps.WorkspacesConfig",
     "core.apps.boards.apps.BoardsConfig",
+    "core.apps.tasks.apps.TasksConfig",
 ]
 
 MIDDLEWARE = [
@@ -101,3 +102,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "static"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+AUTH_USER_MODEL = "users.CustomUser"

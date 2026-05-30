@@ -220,3 +220,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 # taskflow_drf_technical_specification_ru.md
+.idea/
+static/
