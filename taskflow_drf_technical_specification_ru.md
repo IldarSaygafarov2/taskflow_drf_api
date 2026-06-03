@@ -770,6 +770,10 @@ Column представляет колонку Kanban доски.
 - GET /api/tasks/{id}/comments/
 - POST /api/tasks/{id}/comments/
 
+### Attachments
+- GET /api/tasks/{task_id}/attachments/
+- POST /api/tasks/{task_id}/attachments/
+- DELETE /api/tasks/{task_id}/attachments/{id}/
 
 ### Boards
 - GET    /api/projects/{project_id}/boards/
