@@ -770,7 +770,28 @@ Column представляет колонку Kanban доски.
 - GET /api/tasks/{id}/comments/
 - POST /api/tasks/{id}/comments/
 
----
+
+### Boards
+- GET    /api/projects/{project_id}/boards/
+- POST   /api/projects/{project_id}/boards/
+
+- GET    /api/boards/{id}/
+- PATCH  /api/boards/{id}/
+- DELETE /api/boards/{id}/
+- GET    /api/boards/{id}/kanban/
+
+- GET    /api/boards/{id}/columns/
+- POST   /api/boards/{id}/columns/
+
+- GET    /api/columns/{id}/
+- PATCH  /api/columns/{id}/
+- DELETE /api/columns/{id}/
+
+- POST   /api/boards/{id}/reorder-columns/
+
+- POST   /api/boards/move-task/
+- POST   /api/columns/{id}/reorder-tasks/
+
 
 # 23. Требования к качеству кода
 
