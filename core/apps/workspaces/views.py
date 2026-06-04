@@ -1,27 +1,23 @@
-from django.shortcuts import render
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import generics
-from rest_framework.decorators import api_view
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 
 from . import serializers
 from .models import Workspace, WorkspaceMember
 
 
-@swagger_auto_schema(
-    method="get",
-    operation_id="get_workspaces_list",
-    responses={"200": "serializers.WorkspaceListSerializer"},
-)
-@swagger_auto_schema(
-    method="post",
-    operation_id="create_workspace",
-    request_body=serializers.WorkspaceListSerializer,
-)
+@swagger_auto_schema(method="get", operation_id="get_workspaces_list")
+@swagger_auto_schema(method="post", operation_id="create_workspace")
 @api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
 def get_create_workspaces(request):
-    return Response("serializers.WorkspaceListSerializer")
+    return Response("hello")
 
 
 @swagger_auto_schema(method="get", operation_id="get_workspace_detail")

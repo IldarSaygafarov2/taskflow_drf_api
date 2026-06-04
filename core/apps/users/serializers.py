@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
 
@@ -31,3 +32,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
         )
         return user
+
+
+class LogoutSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()
+
+    class Meta:
+        model = RefreshToken
+        fields = ["refresh_token"]

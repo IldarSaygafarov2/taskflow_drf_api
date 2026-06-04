@@ -11,4 +11,8 @@ urlpatterns = [
         views.get_create_board_columns,
         name="board-columns",
     ),
+    # columns
+    path("columns/<int:column_id>/", views.get_column, name="column-detail"),
+    path("columns/<int:column_id>/delete/", views.delete_column, name="column-delete"),
+    path("columns/<int:column_id>/update/", views.update_column, name="column-update"),
 ]

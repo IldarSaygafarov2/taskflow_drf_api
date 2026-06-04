@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # external
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
     # apps
     "core.apps.activity_logs.apps.ActivityLogsConfig",
@@ -117,11 +118,11 @@ AUTH_USER_MODEL = "users.CustomUser"
 
 # REST FRAMEWORK SETTINGS
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_AUTHENTICATION_CLASSES": (
-#         "rest_framework_simplejwt.authentication.JWTAuthentication"
-#     ),
-# }
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
