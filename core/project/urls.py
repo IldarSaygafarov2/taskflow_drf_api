@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/workspaces/", include("core.apps.workspaces.urls")),
     path("api/tasks/", include("core.apps.tasks.urls")),
     path("api/projects/", include("core.apps.projects.urls")),
+    path("api/boards/", include("core.apps.boards.urls")),
     path(
         "docs/",
         schema_view.with_ui("swagger", cache_timeout=0),

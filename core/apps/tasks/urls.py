@@ -19,4 +19,14 @@ urlpatterns = [
         views.delete_task_comment,
         name="delete-task-comment",
     ),
+    path(
+        "<int:task_id>/attachments/",
+        views.get_or_create_task_attachments,
+        name="task-attachments",
+    ),
+    path(
+        "<int:task_id>/attachments/<int:attachment_id>/",
+        views.delete_task_attachment,
+        name="delete-task-attachment",
+    ),
 ]

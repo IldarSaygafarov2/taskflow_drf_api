@@ -161,7 +161,3 @@ SIMPLE_JWT = {
     "REVOKE_TOKEN_CLAIM": "hash_password",
     "CHECK_USER_IS_ACTIVE": True,
 }
-
-# SWAGGER_SETTINGS = {
-#     "OPERATIONS_SORTER": "-method",
-# }
