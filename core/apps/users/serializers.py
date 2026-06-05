@@ -40,3 +40,15 @@ class LogoutSerializer(serializers.Serializer):
     class Meta:
         model = RefreshToken
         fields = ["refresh_token"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["id", "username", "first_name", "last_name", "email", "avatar"]
+
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ["username", "first_name", "last_name", "email", "avatar"]
