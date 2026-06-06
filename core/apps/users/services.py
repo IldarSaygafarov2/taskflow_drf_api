@@ -1,9 +1,8 @@
+from pathlib import Path
+
 from rest_framework.response import Response
 
-from core.project.settings import BASE_DIR
-
 from .serializers import UserSerializer, UserUpdateSerializer
-from pathlib import Path
 
 
 def get_user_info(request):
