@@ -758,6 +758,8 @@ Column представляет колонку Kanban доски.
 - GET /api/projects/
 - POST /api/projects/
 - GET /api/projects/{id}/
+- GET    /api/projects/{project_id}/boards/
+- POST   /api/projects/{project_id}/boards/
 
 ### Tasks
 - GET /api/tasks/
@@ -776,9 +778,6 @@ Column представляет колонку Kanban доски.
 - DELETE /api/tasks/{task_id}/attachments/{id}/
 
 ### Boards
-- GET    /api/projects/{project_id}/boards/
-- POST   /api/projects/{project_id}/boards/
-
 - GET    /api/boards/{id}/
 - PATCH  /api/boards/{id}/
 - DELETE /api/boards/{id}/

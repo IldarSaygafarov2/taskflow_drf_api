@@ -26,8 +26,16 @@ class Task(BaseModel):
     )
     title = models.CharField(verbose_name="Title", max_length=150)
     description = models.TextField(verbose_name="Description")
-    status = models.CharField(verbose_name="Status", choices=TaskStatus.choices)
-    priority = models.CharField(verbose_name="Priority", choices=TaskPriority.choices)
+    status = models.CharField(
+        verbose_name="Status",
+        choices=TaskStatus.choices,
+        default=TaskStatus.TODO,
+    )
+    priority = models.CharField(
+        verbose_name="Priority",
+        choices=TaskPriority.choices,
+        default=TaskPriority.LOW,
+    )
     assignee = models.ForeignKey(
         "users.CustomUser",
         on_delete=models.CASCADE,
@@ -42,10 +50,13 @@ class Task(BaseModel):
     )
     deadline = models.DateTimeField(verbose_name="Task deadline")
     estimated_hours = models.DecimalField(
-        verbose_name="Estimated hours", max_digits=3, decimal_places=2
+        verbose_name="Estimated hours", max_digits=5, decimal_places=2
     )
     spent_hours = models.DecimalField(
-        verbose_name="Spent hours", max_digits=3, decimal_places=2
+        verbose_name="Spent hours",
+        max_digits=5,
+        decimal_places=2,
+        default=0,
     )
     is_completed = models.BooleanField(verbose_name="Is completed", default=False)
     is_deleted = models.BooleanField(verbose_name="Is deleted", default=False)

@@ -26,15 +26,14 @@ def get_create_workspaces(request):
         workspaces = Workspace.objects.all()
         workspace_serializer = serializers.WorkspaceSerializer(workspaces, many=True)
         return Response(workspace_serializer.data)
-    if request.method == "POST":
-        workspace_serializer = serializers.WorkspaceCreateSerializer(
-            data=request.data,
-            context={"request": request},
-        )
-        workspace_serializer.is_valid(raise_exception=True)
-        saved_workspace = workspace_serializer.save()
-        workspace_output = serializers.WorkspaceSerializer(saved_workspace)
-        return Response(workspace_output.data)
+    workspace_serializer = serializers.WorkspaceCreateSerializer(
+        data=request.data,
+        context={"request": request},
+    )
+    workspace_serializer.is_valid(raise_exception=True)
+    saved_workspace = workspace_serializer.save()
+    workspace_output = serializers.WorkspaceSerializer(saved_workspace)
+    return Response(workspace_output.data)
 
 
 @swagger_auto_schema(
@@ -96,7 +95,9 @@ def get_or_create_workspace_members(request, workspace_id):
     workspace = get_object_or_404(Workspace, id=workspace_id)
 
     if request.method == "GET":
-        pass
+        members = workspace.workspacemember_set.all()
+        members_serializer = serializers.WorkspaceMemeberSerializer(members, many=True)
+        return Response(members_serializer.data)
 
     serializer = serializers.WorkspaceMemberCreateSerializer(
         data=request.data,
@@ -104,4 +105,5 @@ def get_or_create_workspace_members(request, workspace_id):
     )
     serializer.is_valid(raise_exception=True)
     output = serializer.save()
-    return serializers.WorkspaceMemeberSerializer(output.data)
+    output = serializers.WorkspaceMemeberSerializer(output)
+    return Response(output.data)

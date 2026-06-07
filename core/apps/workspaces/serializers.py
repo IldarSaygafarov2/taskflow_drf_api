@@ -23,6 +23,12 @@ class WorkspaceSerializer(WorkspaceAbstractSerializer):
     pass
 
 
+class WorkspaceProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workspace
+        fields = ["id", "name", "slug", "created_at", "updated_at"]
+
+
 class WorkspaceDetailSerializer(WorkspaceAbstractSerializer):
     class Meta:
         model = Workspace
