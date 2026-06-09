@@ -3,15 +3,27 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
 from core.apps.boards import serializers as boards_serializers
+from drf_yasg import openapi
+
 from . import serializers
-from .models import Project
+from .models import Project, ProjectStatus
 
 
 @swagger_auto_schema(
     method="get",
     operation_id="get_projects",
     responses={200: serializers.ProjectListSerializer},
+    manual_parameters=[
+        openapi.Parameter(
+            "status",
+            openapi.IN_QUERY,
+            description="Filter by status",
+            type=openapi.TYPE_STRING,
+            enum=[choice[0] for choice in ProjectStatus.choices],
+        ),
+    ],
 )
 @swagger_auto_schema(
     method="post",
@@ -31,7 +43,12 @@ def get_or_create_project(request):
         new_project_serializer = serializers.ProjectDetailSerializer(new_project)
         return Response(new_project_serializer.data)
 
-    projects = Project.objects.all()
+    params = request.GET
+
+    if status := params.get("status"):
+        projects = Project.objects.filter(status=status)
+    else:
+        projects = Project.objects.all()
     serializer = serializers.ProjectListSerializer(projects, many=True)
     return Response(serializer.data)
 

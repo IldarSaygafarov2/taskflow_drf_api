@@ -1,20 +1,56 @@
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, parser_classes, permission_classes
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.apps.attachments import serializers as attachment_serializers
+from core.apps.attachments.models import Attachment
 from core.apps.comments import serializers as comments_serializers
+from core.apps.comments.models import Comment
 
 from . import serializers
-from .models import Task
+from .models import Task, TaskPriority, TaskStatus
+
+
+def apply_filters(params, qs):
+    """"""
+    if status := params.get("status"):
+        qs = qs.filter(status=status)
+    if priority := params.get("priority"):
+        qs = qs.filter(priority=priority)
+    return qs
 
 
 @swagger_auto_schema(
     method="get",
     operation_id="get_all_tasks",
     responses={200: serializers.TaskSerializer},
+    manual_parameters=[
+        openapi.Parameter(
+            "priority",
+            openapi.IN_QUERY,
+            description="Filter by priority",
+            type=openapi.TYPE_STRING,
+            enum=[item[0] for item in TaskPriority.choices],
+        ),
+        openapi.Parameter(
+            "status",
+            openapi.IN_QUERY,
+            description="Filter by status",
+            type=openapi.TYPE_STRING,
+            enum=[item[0] for item in TaskStatus.choices],
+        ),
+        openapi.Parameter(
+            "ordering",
+            openapi.IN_QUERY,
+            description="Ordering fields",
+            type=openapi.TYPE_STRING,
+            enum=["id", "-id", "created_at", "-created_at", "deadline", "-deadline"],
+        ),
+    ],
 )
 @swagger_auto_schema(
     method="post",
@@ -23,9 +59,13 @@ from .models import Task
     responses={200: serializers.TaskSerializer},
 )
 @api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
 def get_or_create_task(request):
     if request.method == "GET":
+        params = request.GET
+
         tasks = Task.objects.all()
+        tasks = apply_filters(params, tasks)
         tasks_serializer = serializers.TaskSerializer(tasks, many=True)
         return Response(tasks_serializer.data)
 
@@ -49,6 +89,7 @@ def get_or_create_task(request):
 )
 @swagger_auto_schema(method="delete", operation_id="delete_task")
 @api_view(["GET", "PATCH", "DELETE"])
+@permission_classes([IsAuthenticated])
 def get_task_by_id(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
@@ -81,6 +122,7 @@ def get_task_by_id(request, task_id):
     responses={200: comments_serializers.CommentSerializer},
 )
 @api_view(["POST", "GET"])
+@permission_classes([IsAuthenticated])
 def get_or_create_task_comments(request, task_id):
     task = get_object_or_404(Task, id=task_id)
 
@@ -103,18 +145,55 @@ def get_or_create_task_comments(request, task_id):
 
 @swagger_auto_schema(method="delete", operation_id="delete_task_comment")
 @api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
 def delete_task_comment(request, task_id, comment_id):
-    pass
+    _ = get_object_or_404(Task, id=task_id)
+    comment = get_object_or_404(Comment, id=comment_id)
+    comment.delete()
+    return Response({"message": "Comment deleted"})
 
 
-@swagger_auto_schema(method="get", operation_id="get_all_task_attachments")
-@swagger_auto_schema(method="post", operation_id="create_task_attachment")
+@swagger_auto_schema(
+    method="get",
+    operation_id="get_all_task_attachments",
+    responses={200: attachment_serializers.AttachmentReadSerializer},
+)
+@swagger_auto_schema(
+    method="post",
+    operation_id="create_task_attachment",
+    request_body=attachment_serializers.AttachmentCreateSerializer,
+    responses={200: attachment_serializers.AttachmentReadSerializer},
+)
 @api_view(["GET", "POST"])
+@parser_classes([MultiPartParser])
+@permission_classes([IsAuthenticated])
 def get_or_create_task_attachments(request, task_id):
-    pass
+    task = get_object_or_404(Task, id=task_id)
+    if request.method == "GET":
+        attachments = task.attachment_set.all()
+        serializer = attachment_serializers.AttachmentReadSerializer(
+            attachments, many=True
+        )
+        return Response(serializer.data)
+
+    serializer = attachment_serializers.AttachmentCreateSerializer(
+        data=request.data,
+        context={"task": task, "request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    new_attachment = serializer.save()
+    new_attachment_serializer = attachment_serializers.AttachmentReadSerializer(
+        new_attachment
+    )
+    return Response(new_attachment_serializer.data)
 
 
 @swagger_auto_schema(method="delete", operation_id="delete_task_attachment")
 @api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
 def delete_task_attachment(request, task_id, attachment_id):
-    pass
+    _ = get_object_or_404(Task, id=task_id)
+
+    attachment = get_object_or_404(Attachment, id=attachment_id)
+    attachment.delete()
+    return Response({"message": "Attachment deleted"})
