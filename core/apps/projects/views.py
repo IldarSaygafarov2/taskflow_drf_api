@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.apps.boards import serializers as boards_serializers
+from core.apps.boards.services import create_default_columns
 from drf_yasg import openapi
 
 from . import serializers
@@ -114,5 +115,6 @@ def get_create_project_boards(request, project_id):
     )
     serializer.is_valid(raise_exception=True)
     new_board = serializer.save()
+    create_default_columns(new_board)
     new_board_serializer = boards_serializers.BoardProjectSerializer(new_board)
     return Response(new_board_serializer.data)

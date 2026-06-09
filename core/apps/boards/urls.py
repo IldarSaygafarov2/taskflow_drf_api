@@ -6,6 +6,7 @@ app_name = "boards"
 
 urlpatterns = [
     path("<int:board_id>/", views.get_update_delete_board, name="board-detail"),
+    path("<int:board_id>/kanban/", views.get_kanban, name="kanban-table"),
     path(
         "<int:board_id>/columns/",
         views.get_create_board_columns,

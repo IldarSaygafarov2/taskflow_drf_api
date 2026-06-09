@@ -103,3 +103,15 @@ def get_update_delete_column(request, column_id):
 
     column.delete()
     return Response({"message": "Column deleted"})
+
+
+@swagger_auto_schema(
+    method="get",
+    operation_id="get_kanban_table",
+    responses={200: serializers.BoardKanbanSerializer},
+)
+@api_view(["GET"])
+def get_kanban(request, board_id):
+    board = get_object_or_404(Board, id=board_id)
+    serializer = serializers.BoardKanbanSerializer(board)
+    return Response(serializer.data)

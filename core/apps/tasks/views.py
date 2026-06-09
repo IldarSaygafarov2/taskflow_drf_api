@@ -16,7 +16,6 @@ from .models import Task, TaskPriority, TaskStatus
 
 
 def apply_filters(params, qs):
-    """"""
     if status := params.get("status"):
         qs = qs.filter(status=status)
     if priority := params.get("priority"):
