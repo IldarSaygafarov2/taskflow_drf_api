@@ -8,6 +8,7 @@ services:
       - "8001:8001"
     depends_on:
       - taskflow-pg
+      - redis
     volumes:
       - ./:/app
     command: >
@@ -35,6 +36,26 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_broker
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    env_file:
+      - ./.env
+    command: celery -A core.project:celery_app worker --loglevel=info
+    volumes:
+      - ./:/app
+    depends_on:
+      - redis
+      - django-api
+    restart: unless-stopped
 
 volumes:
   db_data:

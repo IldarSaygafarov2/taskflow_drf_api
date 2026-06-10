@@ -29,9 +29,9 @@ from .services import get_user_info, update_user_data
 def get_or_update_user_info(request):
     if request.method == "GET":
         return get_user_info(request)
-    if request.method == "PATCH":
-        # updating user data
-        return update_user_data(request)
+
+    # updating user data
+    return update_user_data(request)
 
 
 class UserRegistrationView(generics.CreateAPIView):

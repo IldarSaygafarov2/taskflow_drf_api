@@ -10,6 +10,8 @@ from core.apps.attachments import serializers as attachment_serializers
 from core.apps.attachments.models import Attachment
 from core.apps.comments import serializers as comments_serializers
 from core.apps.comments.models import Comment
+from core.project import settings
+from core.apps.common.tasks import send_welcome_message_to_email
 
 from . import serializers
 from .models import Task, TaskPriority, TaskStatus
@@ -47,7 +49,7 @@ def apply_filters(params, qs):
             openapi.IN_QUERY,
             description="Ordering fields",
             type=openapi.TYPE_STRING,
-            enum=["id", "-id", "created_at", "-created_at", "deadline", "-deadline"],
+            enum=settings.TASK_ORDERING_FIELDS,
         ),
     ],
 )
@@ -62,7 +64,6 @@ def apply_filters(params, qs):
 def get_or_create_task(request):
     if request.method == "GET":
         params = request.GET
-
         tasks = Task.objects.all()
         tasks = apply_filters(params, tasks)
         tasks_serializer = serializers.TaskSerializer(tasks, many=True)
@@ -72,7 +73,13 @@ def get_or_create_task(request):
     serializer.is_valid(raise_exception=True)
     created = serializer.save()
     created_serializer = serializers.TaskSerializer(created)
-    return Response(created_serializer.data)
+    data = created_serializer.data
+    send_welcome_message_to_email.delay(
+        subject="Task apply",
+        message=f"Your task created: {created}",
+        recepient=data.get("assignee")["email"],
+    )
+    return Response(data)
 
 
 @swagger_auto_schema(
