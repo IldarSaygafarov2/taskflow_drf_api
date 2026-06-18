@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -10,8 +12,8 @@ from core.apps.attachments import serializers as attachment_serializers
 from core.apps.attachments.models import Attachment
 from core.apps.comments import serializers as comments_serializers
 from core.apps.comments.models import Comment
+from core.apps.common.tasks import send_message_to_email
 from core.project import settings
-from core.apps.common.tasks import send_welcome_message_to_email
 
 from . import serializers
 from .models import Task, TaskPriority, TaskStatus
@@ -72,12 +74,25 @@ def get_or_create_task(request):
     serializer = serializers.TaskCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     created = serializer.save()
+    notification_time = (created.deadline - timedelta(days=1)) + timedelta(minutes=5)
+    print(notification_time)
+
     created_serializer = serializers.TaskSerializer(created)
     data = created_serializer.data
-    send_welcome_message_to_email.delay(
+    assignee_email = data.get("assignee")["email"]
+    # notify user about deadline
+    deadline_message = """
+The deadline for this project is approaching, hurry up.
+"""
+    send_message_to_email.apply_async(
+        args=["Deadline is comming", deadline_message, assignee_email],
+        eta=notification_time,
+    )
+    # send message about task created
+    send_message_to_email.delay(
         subject="Task apply",
         message=f"Your task created: {created}",
-        recepient=data.get("assignee")["email"],
+        recipient=assignee_email,
     )
     return Response(data)
 

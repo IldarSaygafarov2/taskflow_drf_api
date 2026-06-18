@@ -5,7 +5,7 @@ from core.project.settings import DEFAULT_FROM_EMAIL
 
 
 @celery_app.task
-def send_welcome_message_to_email(subject, message, recipient):
+def send_message_to_email(subject, message, recipient):
     return send_mail(
         subject=subject,
         message=message,

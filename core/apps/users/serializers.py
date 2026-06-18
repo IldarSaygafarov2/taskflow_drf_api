@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.apps.common.tasks import send_welcome_message_to_email
+from core.apps.common.tasks import send_message_to_email
 
 from .models import CustomUser
 
@@ -34,7 +34,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
         )
 
-        send_welcome_message_to_email.delay(
+        send_message_to_email.delay(
             subject="Registration welcome message",
             message=f"Hello, {user.get_full_name()}. Welcome to our project",
             recipient=user.email,
