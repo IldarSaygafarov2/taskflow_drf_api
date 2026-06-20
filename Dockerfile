@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 
-CMD ["gunicorn", "-c", "deploy/gunicorn_conf.py", "core.project.wsgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8001", "core.project.asgi:application"]

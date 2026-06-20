@@ -17,7 +17,7 @@ services:
         python manage.py makemigrations &&
         python manage.py migrate --no-input && 
         python manage.py createsuperuser --no-input || true &&
-        gunicorn -c deploy/gunicorn_conf.py core.project.wsgi:application --reload
+        daphne -b 0.0.0.0 -p 8001 core.project.asgi:application
       "
 
   taskflow-pg:

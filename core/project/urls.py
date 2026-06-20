@@ -20,6 +20,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("notifications-example/", include("core.apps.notifications.urls")),
     path("api/users/", include("core.apps.users.urls")),
     path("api/workspaces/", include("core.apps.workspaces.urls")),
     path("api/tasks/", include("core.apps.tasks.urls")),
