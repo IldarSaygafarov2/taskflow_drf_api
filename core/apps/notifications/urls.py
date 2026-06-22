@@ -4,7 +4,7 @@ from . import views
 from .consumers import NotificationConsumer
 
 urlpatterns = [
-    path("", views.show_notifications_example_page),
+    path("", views.show_notifications_example_page, name="notifications-page"),
 ]
 
 websocket_urlpatterns = [

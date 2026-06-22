@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from core.apps.notifications.models import Notification
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -42,13 +43,23 @@ class UserRegistrationView(generics.CreateAPIView):
     @swagger_auto_schema(tags=["Auth"])
     def post(self, request, *args, **kwargs):
         channel_layer = get_channel_layer()
+        user = self.get_object()
+
+        Notification.objects.create(
+            user=user,
+            title="Registration",
+            message=f"{user} registered",
+        )
+
         async_to_sync(channel_layer.group_send)(
             "notifications",
             {
                 "type": "send_notification",
                 "message": "Registered",
+                "created_at": user.date_joined,
             },
         )
+
         return super().post(request, *args, **kwargs)
 
 
