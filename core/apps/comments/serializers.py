@@ -5,7 +5,7 @@ from core.apps.users.serializers import UserSerializer
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = UserSerializer
+    author = UserSerializer()
 
     class Meta:
         model = Comment
@@ -16,3 +16,12 @@ class CommentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = ["content"]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        task = self.context.get("task")
+        return Comment.objects.create(
+            **validated_data,
+            task=task,
+            author=request.user,
+        )

@@ -13,7 +13,9 @@ class Comment(BaseModel):
     content = models.TextField(verbose_name="Content")
 
     def __str__(self):
-        return f'Comment for task "{self.task.title}" from user "{self.user.username}"'
+        return (
+            f'Comment for task "{self.task.title}" from user "{self.author.username}"'
+        )
 
     class Meta:
         verbose_name = "Comment"

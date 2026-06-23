@@ -42,8 +42,10 @@ class UserRegistrationView(generics.CreateAPIView):
 
     @swagger_auto_schema(tags=["Auth"])
     def post(self, request, *args, **kwargs):
-        channel_layer = get_channel_layer()
-        user = self.get_object()
+        return super().post(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        user = serializer.save()
 
         Notification.objects.create(
             user=user,
@@ -51,6 +53,7 @@ class UserRegistrationView(generics.CreateAPIView):
             message=f"{user} registered",
         )
 
+        channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             "notifications",
             {
@@ -59,8 +62,6 @@ class UserRegistrationView(generics.CreateAPIView):
                 "created_at": user.date_joined,
             },
         )
-
-        return super().post(request, *args, **kwargs)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):

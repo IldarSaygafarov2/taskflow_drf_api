@@ -32,7 +32,7 @@ INSTALLED_APPS = [
     "channels",
     "corsheaders",
     # apps
-    "core.apps.activity_logs.apps.ActivityLogsConfig",
+    # "core.apps.activity_logs.apps.ActivityLogsConfig",
     "core.apps.attachments.apps.AttachmentsConfig",
     "core.apps.comments.apps.CommentsConfig",
     "core.apps.notifications.apps.NotificationsConfig",
