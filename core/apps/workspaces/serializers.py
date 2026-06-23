@@ -1,5 +1,6 @@
 from django.template.defaultfilters import slugify
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from core.apps.users.serializers import UserSerializer
 
@@ -43,6 +44,12 @@ class WorkspaceCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get("request")  # получаем контекст запроса
         slug = slugify(validated_data["name"])
+
+        if Workspace.objects.filter(slug=slug).exists():
+            raise ValidationError(
+                {"message": "Workspace with this slug already exists"}
+            )
+
         return Workspace.objects.create(**validated_data, owner=request.user, slug=slug)
 
 

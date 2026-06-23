@@ -4,8 +4,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.apps.notifications.models import Notification
+
 from . import serializers
-from .models import Workspace, WorkspaceMember
+from .models import Workspace
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 @swagger_auto_schema(
@@ -32,8 +36,24 @@ def get_create_workspaces(request):
     )
     workspace_serializer.is_valid(raise_exception=True)
     saved_workspace = workspace_serializer.save()
-    workspace_output = serializers.WorkspaceSerializer(saved_workspace)
-    return Response(workspace_output.data)
+    workspace_output = serializers.WorkspaceSerializer(saved_workspace).data
+    Notification.objects.create(
+        user=request.user,
+        title="Workspace",
+        message=f"Workspace created",
+    )
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        "notifications",
+        {
+            "type": "send_notification",
+            "message": "new workspace crerated",
+            "title": "Workspace",
+            "created_at": workspace_output.get("created_at"),
+        },
+    )
+    return Response(workspace_output)
 
 
 @swagger_auto_schema(
@@ -41,40 +61,33 @@ def get_create_workspaces(request):
     operation_id="get_workspace_detail",
     responses={200: serializers.WorkspaceDetailSerializer},
 )
-@api_view(["GET"])
-def get_workspace_detail(request, workspace_id):
-    workspace = get_object_or_404(Workspace, id=workspace_id)
-    workspace_serializer = serializers.WorkspaceDetailSerializer(workspace, many=False)
-    return Response(workspace_serializer.data)
-
-
 @swagger_auto_schema(
     method="patch",
     operation_id="partial_update_workspace",
     request_body=serializers.WorkspaceUpdateSerializer,
     responses={200: serializers.WorkspaceDetailSerializer},
 )
-@api_view(["PATCH"])
+@api_view(["GET", "DELETE", "PATCH"])
 @permission_classes([IsAuthenticated])
-def partial_update_workspace(request, workspace_id):
+def workspace_detail_delete_patch(request, workspace_id):
     workspace = get_object_or_404(Workspace, id=workspace_id)
-    workspace_serializer = serializers.WorkspaceUpdateSerializer(
-        workspace,
-        data=request.data,
-        partial=True,
-    )
-    workspace_serializer.is_valid(raise_exception=True)
-    workspace_serializer.save()
+    if request.method == "GET":
+        workspace_serializer = serializers.WorkspaceDetailSerializer(
+            workspace, many=False
+        )
+        return Response(workspace_serializer.data)
+    if request.method == "PATCH":
+        workspace_serializer = serializers.WorkspaceUpdateSerializer(
+            workspace,
+            data=request.data,
+            partial=True,
+        )
+        workspace_serializer.is_valid(raise_exception=True)
+        workspace_serializer.save()
 
-    output = serializers.WorkspaceDetailSerializer(workspace)
-    return Response(output.data)
+        output = serializers.WorkspaceDetailSerializer(workspace)
+        return Response(output.data)
 
-
-@swagger_auto_schema(method="delete", operation_id="delete_workspace")
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
-def delete_workspace(request, workspace_id):
-    workspace = get_object_or_404(Workspace, id=workspace_id)
     workspace.delete()
     return Response({"status": "ok"})
 

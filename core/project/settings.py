@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "drf_yasg",
     "channels",
+    "corsheaders",
     # apps
     "core.apps.activity_logs.apps.ActivityLogsConfig",
     "core.apps.attachments.apps.AttachmentsConfig",
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -200,15 +202,18 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 # DJANGO CHANNELS SETTINGS
 
+# CHANNEL_LAYERS = {
+#     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+# }
+
 CHANNEL_LAYERS = {
-    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("redis", 6379)],
-#         },
-#     },
-# }
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+print(CORS_ALLOWED_ORIGINS)

@@ -16,9 +16,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def send_notification(self, event):
         message = event["message"]
         created_at = event["created_at"]
+        title = event["title"]
 
         template = Template(f"""
 <li class="list-group-item d-flex justify-content-between align-items-start">
+    <h2>{title}</h2>
     <div class="ms-2 me-auto">
         <div class="fw-bold">{created_at}</div>
         {message}
