@@ -4,12 +4,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.apps.notifications.models import Notification
+from core.apps.common.services import send_notification
 
 from . import serializers
 from .models import Workspace
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+from .services import create_workspace, get_workspaces_list
 
 
 @swagger_auto_schema(
@@ -27,31 +26,18 @@ from channels.layers import get_channel_layer
 @permission_classes([IsAuthenticated])
 def get_create_workspaces(request):
     if request.method == "GET":
-        workspaces = Workspace.objects.all()
+        workspaces = get_workspaces_list()
         workspace_serializer = serializers.WorkspaceSerializer(workspaces, many=True)
         return Response(workspace_serializer.data)
-    workspace_serializer = serializers.WorkspaceCreateSerializer(
-        data=request.data,
-        context={"request": request},
-    )
-    workspace_serializer.is_valid(raise_exception=True)
-    saved_workspace = workspace_serializer.save()
+
+    saved_workspace = create_workspace(request)
     workspace_output = serializers.WorkspaceSerializer(saved_workspace).data
-    Notification.objects.create(
+
+    send_notification(
         user=request.user,
         title="Workspace",
-        message=f"Workspace created",
-    )
-    channel_layer = get_channel_layer()
-
-    async_to_sync(channel_layer.group_send)(
-        "notifications",
-        {
-            "type": "send_notification",
-            "message": "new workspace crerated",
-            "title": "Workspace",
-            "created_at": workspace_output.get("created_at"),
-        },
+        message="Workspace created",
+        created_at=workspace_output.get("created_at"),
     )
     return Response(workspace_output)
 

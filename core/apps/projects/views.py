@@ -1,15 +1,22 @@
-from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.apps.boards import serializers as boards_serializers
-from core.apps.boards.services import create_default_columns
 from drf_yasg import openapi
 
 from . import serializers
-from .models import Project, ProjectStatus
+from .models import ProjectStatus
+from .services import (
+    create_project,
+    create_project_board,
+    delete_project,
+    get_project,
+    get_project_boards,
+    get_projects_list,
+    update_project,
+)
 
 
 @swagger_auto_schema(
@@ -36,20 +43,12 @@ from .models import Project, ProjectStatus
 @permission_classes([IsAuthenticated])
 def get_or_create_project(request):
     if request.method == "POST":
-        project_creation_serializer = serializers.ProjectCreateSerializer(
-            data=request.data, context={"request": request}
-        )
-        project_creation_serializer.is_valid(raise_exception=True)
-        new_project = project_creation_serializer.save()
+        new_project = create_project(request)
         new_project_serializer = serializers.ProjectDetailSerializer(new_project)
         return Response(new_project_serializer.data)
 
-    params = request.GET
-
-    if status := params.get("status"):
-        projects = Project.objects.filter(status=status)
-    else:
-        projects = Project.objects.all()
+    status = request.GET.get("status")
+    projects = get_projects_list(status=status)
     serializer = serializers.ProjectListSerializer(projects, many=True)
     return Response(serializer.data)
 
@@ -69,22 +68,17 @@ def get_or_create_project(request):
 @api_view(["GET", "DELETE", "PATCH"])
 @permission_classes([IsAuthenticated])
 def get_delete_update_project(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
     if request.method == "GET":
-        serializer = serializers.ProjectDetailSerializer(project, many=False)
+        project = get_project(project_id)
+        serializer = serializers.ProjectDetailSerializer(project)
         return Response(serializer.data)
+
     if request.method == "DELETE":
-        project.delete()
+        delete_project(project_id)
         return Response({"message": "Project deleted"})
 
-    project_update_serializer = serializers.ProjectUpdateSerializer(
-        project, data=request.data, partial=True
-    )
-    project_update_serializer.is_valid(raise_exception=True)
-    updated_project = project_update_serializer.save()
-    updated_project_serializer = serializers.ProjectDetailSerializer(
-        updated_project, many=False
-    )
+    updated_project = update_project(project_id, request.data)
+    updated_project_serializer = serializers.ProjectDetailSerializer(updated_project)
     return Response(updated_project_serializer.data)
 
 
@@ -101,20 +95,13 @@ def get_delete_update_project(request, project_id):
 )
 @api_view(["GET", "POST"])
 def get_create_project_boards(request, project_id):
-    project = get_object_or_404(Project, id=project_id)
-
     if request.method == "GET":
-        project_boards = project.board_set.all()
+        project_boards = get_project_boards(project_id)
         project_boards_serializer = boards_serializers.BoardProjectSerializer(
             project_boards, many=True
         )
         return Response(project_boards_serializer.data)
 
-    serializer = boards_serializers.BoardProjectCreateSerializer(
-        data=request.data, context={"project": project}
-    )
-    serializer.is_valid(raise_exception=True)
-    new_board = serializer.save()
-    create_default_columns(new_board)
-    new_board_serializer = boards_serializers.BoardProjectSerializer(new_board)
+    board = create_project_board(project_id, request.data)
+    new_board_serializer = boards_serializers.BoardProjectSerializer(board)
     return Response(new_board_serializer.data)

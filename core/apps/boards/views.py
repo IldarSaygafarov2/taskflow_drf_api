@@ -1,11 +1,20 @@
-from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import serializers
-from .models import Board, BoardColumn
+from .services import (
+    create_board_column,
+    delete_board,
+    delete_column,
+    get_board,
+    get_board_columns,
+    get_board_kanban,
+    get_column,
+    update_board,
+    update_column,
+)
 
 
 @swagger_auto_schema(
@@ -23,23 +32,17 @@ from .models import Board, BoardColumn
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def get_update_delete_board(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
-
     if request.method == "GET":
-        board_serializer = serializers.BoardSerializer(board, many=False)
+        board = get_board(board_id)
+        board_serializer = serializers.BoardSerializer(board)
         return Response(board_serializer.data)
+
     if request.method == "PATCH":
-        board_update_serializer = serializers.BoardUpdateSerializer(
-            board, data=request.data, partial=True
-        )
-        board_update_serializer.is_valid(raise_exception=True)
-        updated_board = board_update_serializer.save()
-        updated_board_serializer = serializers.BoardSerializer(
-            updated_board, many=False
-        )
+        updated_board = update_board(board_id, request.data)
+        updated_board_serializer = serializers.BoardSerializer(updated_board)
         return Response(updated_board_serializer.data)
 
-    board.delete()
+    delete_board(board_id)
     return Response({"message": "Board deleted"})
 
 
@@ -57,17 +60,12 @@ def get_update_delete_board(request, board_id):
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def get_create_board_columns(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
     if request.method == "POST":
-        board_column_serializer = serializers.BoardColumnCreateSerializer(
-            data=request.data, context={"board": board}
-        )
-        board_column_serializer.is_valid(raise_exception=True)
-        new_column = board_column_serializer.save()
+        new_column = create_board_column(board_id, request.data)
         column_serializer = serializers.BoardColumnSerializer(new_column)
         return Response(column_serializer.data)
 
-    columns = board.boardcolumn_set.all()
+    columns = get_board_columns(board_id)
     columns_serializer = serializers.BoardColumnSerializer(columns, many=True)
     return Response(columns_serializer.data)
 
@@ -87,21 +85,17 @@ def get_create_board_columns(request, board_id):
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def get_update_delete_column(request, column_id):
-    column = get_object_or_404(BoardColumn, id=column_id)
     if request.method == "GET":
-        column_serializer = serializers.BoardColumnSerializer(column, many=False)
+        column = get_column(column_id)
+        column_serializer = serializers.BoardColumnSerializer(column)
         return Response(column_serializer.data)
 
     if request.method == "PATCH":
-        column_serializer = serializers.BoardColumnUpdateSerializer(
-            column, data=request.data, partial=True
-        )
-        column_serializer.is_valid(raise_exception=True)
-        updated_column = column_serializer.save()
+        updated_column = update_column(column_id, request.data)
         updated_column_serializer = serializers.BoardColumnSerializer(updated_column)
         return Response(updated_column_serializer.data)
 
-    column.delete()
+    delete_column(column_id)
     return Response({"message": "Column deleted"})
 
 
@@ -112,6 +106,6 @@ def get_update_delete_column(request, column_id):
 )
 @api_view(["GET"])
 def get_kanban(request, board_id):
-    board = get_object_or_404(Board, id=board_id)
+    board = get_board_kanban(board_id)
     serializer = serializers.BoardKanbanSerializer(board)
     return Response(serializer.data)

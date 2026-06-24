@@ -1,6 +1,3 @@
-from datetime import timedelta
-
-from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import api_view, parser_classes, permission_classes
@@ -9,22 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.apps.attachments import serializers as attachment_serializers
-from core.apps.attachments.models import Attachment
 from core.apps.comments import serializers as comments_serializers
-from core.apps.comments.models import Comment
-from core.apps.common.tasks import send_message_to_email
 from core.project import settings
 
-from . import serializers
-from .models import Task, TaskPriority, TaskStatus
-
-
-def apply_filters(params, qs):
-    if status := params.get("status"):
-        qs = qs.filter(status=status)
-    if priority := params.get("priority"):
-        qs = qs.filter(priority=priority)
-    return qs
+from . import serializers, services
+from .models import TaskPriority, TaskStatus
 
 
 @swagger_auto_schema(
@@ -65,36 +51,15 @@ def apply_filters(params, qs):
 @permission_classes([IsAuthenticated])
 def get_or_create_task(request):
     if request.method == "GET":
-        params = request.GET
-        tasks = Task.objects.all()
-        tasks = apply_filters(params, tasks)
+        status = request.GET.get("status")
+        priority = request.GET.get("priority")
+        tasks = services.get_tasks_list(status=status, priority=priority)
         tasks_serializer = serializers.TaskSerializer(tasks, many=True)
         return Response(tasks_serializer.data)
 
-    serializer = serializers.TaskCreateSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    created = serializer.save()
-    notification_time = (created.deadline - timedelta(days=1)) + timedelta(minutes=5)
-    print(notification_time)
-
+    created = services.create_task(request.data)
     created_serializer = serializers.TaskSerializer(created)
-    data = created_serializer.data
-    assignee_email = data.get("assignee")["email"]
-    # notify user about deadline
-    deadline_message = """
-The deadline for this project is approaching, hurry up.
-"""
-    send_message_to_email.apply_async(
-        args=["Deadline is comming", deadline_message, assignee_email],
-        eta=notification_time,
-    )
-    # send message about task created
-    send_message_to_email.delay(
-        subject="Task apply",
-        message=f"Your task created: {created}",
-        recipient=assignee_email,
-    )
-    return Response(data)
+    return Response(created_serializer.data)
 
 
 @swagger_auto_schema(
@@ -112,22 +77,17 @@ The deadline for this project is approaching, hurry up.
 @api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 def get_task_by_id(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
-
     if request.method == "GET":
+        task = services.get_task(task_id)
         detail_serializer = serializers.TaskDetailSerializer(task)
         return Response(detail_serializer.data)
+
     if request.method == "PATCH":
-        updated_serializer = serializers.TaskUpdateSerializer(
-            task, data=request.data, partial=True
-        )
-        updated_serializer.is_valid(raise_exception=True)
-        updated_task = updated_serializer.save()
+        updated_task = services.update_task(task_id, request.data)
         serializer = serializers.TaskDetailSerializer(updated_task)
         return Response(serializer.data)
 
-    task.delete()
-
+    services.delete_task(task_id)
     return Response({"message": "task deleted"})
 
 
@@ -145,21 +105,14 @@ def get_task_by_id(request, task_id):
 @api_view(["POST", "GET"])
 @permission_classes([IsAuthenticated])
 def get_or_create_task_comments(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
-
     if request.method == "GET":
-        comments = task.comment_set.all()
+        comments = services.get_task_comments(task_id)
         comments_serializer = comments_serializers.CommentSerializer(
             comments, many=True
         )
         return Response(comments_serializer.data)
 
-    comments_serializer = comments_serializers.CommentCreateSerializer(
-        data=request.data,
-        context={"task": task, "request": request},
-    )
-    comments_serializer.is_valid(raise_exception=True)
-    new_comment = comments_serializer.save()
+    new_comment = services.create_task_comment(task_id, request.data, request)
     new_comment_serializer = comments_serializers.CommentSerializer(new_comment)
     return Response(new_comment_serializer.data)
 
@@ -168,9 +121,7 @@ def get_or_create_task_comments(request, task_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_task_comment(request, task_id, comment_id):
-    _ = get_object_or_404(Task, id=task_id)
-    comment = get_object_or_404(Comment, id=comment_id)
-    comment.delete()
+    services.delete_task_comment(task_id, comment_id)
     return Response({"message": "Comment deleted"})
 
 
@@ -189,20 +140,14 @@ def delete_task_comment(request, task_id, comment_id):
 @parser_classes([MultiPartParser])
 @permission_classes([IsAuthenticated])
 def get_or_create_task_attachments(request, task_id):
-    task = get_object_or_404(Task, id=task_id)
     if request.method == "GET":
-        attachments = task.attachment_set.all()
+        attachments = services.get_task_attachments(task_id)
         serializer = attachment_serializers.AttachmentReadSerializer(
             attachments, many=True
         )
         return Response(serializer.data)
 
-    serializer = attachment_serializers.AttachmentCreateSerializer(
-        data=request.data,
-        context={"task": task, "request": request},
-    )
-    serializer.is_valid(raise_exception=True)
-    new_attachment = serializer.save()
+    new_attachment = services.create_task_attachment(task_id, request.data, request)
     new_attachment_serializer = attachment_serializers.AttachmentReadSerializer(
         new_attachment
     )
@@ -213,8 +158,5 @@ def get_or_create_task_attachments(request, task_id):
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
 def delete_task_attachment(request, task_id, attachment_id):
-    _ = get_object_or_404(Task, id=task_id)
-
-    attachment = get_object_or_404(Attachment, id=attachment_id)
-    attachment.delete()
+    services.delete_task_attachment(task_id, attachment_id)
     return Response({"message": "Attachment deleted"})

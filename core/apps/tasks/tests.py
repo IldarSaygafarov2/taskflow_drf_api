@@ -75,7 +75,7 @@ class TasksAppTests(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
         return refresh
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_get_tasks_list(self, mock_send):
         self._authenticate()
         task = Task.objects.create(
@@ -98,7 +98,7 @@ class TasksAppTests(TestCase):
         self.assertEqual(response.data[0]["id"], task.id)
         self.assertEqual(response.data[0]["title"], "Task 1")
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_filter_tasks_by_status_and_priority(self, mock_send):
         self._authenticate()
         Task.objects.create(
@@ -135,11 +135,9 @@ class TasksAppTests(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["title"], "Task High")
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_create_task(self, mock_send_message):
         self._authenticate()
-        mock_send_message.apply_async.return_value = None
-        mock_send_message.delay.return_value = None
 
         payload = {
             "project": self.project.id,
@@ -160,10 +158,9 @@ class TasksAppTests(TestCase):
         self.assertEqual(response.data["priority"], TaskPriority.LOW)
         self.assertEqual(response.data["assignee"]["email"], self.assignee.email)
         self.assertTrue(Task.objects.filter(title="New Task").exists())
-        mock_send_message.apply_async.assert_called_once()
-        mock_send_message.delay.assert_called_once()
+        self.assertEqual(mock_send_message.call_count, 2)
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_create_task_invalid_estimated_hours(self, mock_send_message):
         self._authenticate()
         payload = {
@@ -183,7 +180,7 @@ class TasksAppTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("message", response.data)
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_task_detail_update_and_delete(self, mock_send_message):
         self._authenticate()
         task = Task.objects.create(
@@ -215,7 +212,7 @@ class TasksAppTests(TestCase):
         self.assertEqual(delete_response.status_code, status.HTTP_200_OK)
         self.assertFalse(Task.objects.filter(id=task.id).exists())
 
-    @patch("core.apps.tasks.views.send_message_to_email")
+    @patch("core.apps.tasks.services.schedule_email")
     def test_task_comments_create_and_delete(self, mock_send_message):
         self._authenticate()
         task = Task.objects.create(

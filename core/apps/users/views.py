@@ -6,10 +6,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView, Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from core.apps.notifications.models import Notification
-
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 
 from . import serializers
 from .services import get_user_info, update_user_data
@@ -47,20 +43,13 @@ class UserRegistrationView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
 
-        Notification.objects.create(
+        from core.apps.common.services import send_notification
+
+        send_notification(
             user=user,
             title="Registration",
             message=f"{user} registered",
-        )
-
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            "notifications",
-            {
-                "type": "send_notification",
-                "message": "Registered",
-                "created_at": user.date_joined,
-            },
+            created_at=user.date_joined,
         )
 
 
