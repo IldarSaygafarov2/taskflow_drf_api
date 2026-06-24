@@ -10,7 +10,11 @@ def delete_object_photo(photo_path: str):
 
 
 def send_notification(
-    user, title: str, message: str, created_at=None, group_name="notifications"
+    user,
+    title: str,
+    message: str,
+    created_at=None,
+    group_name="notifications",
 ):
     notification = Notification.objects.create(user=user, title=title, message=message)
     channel_layer = get_channel_layer()

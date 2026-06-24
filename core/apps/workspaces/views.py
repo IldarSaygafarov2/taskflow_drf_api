@@ -4,11 +4,17 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.apps.common.services import send_notification
+from core.apps.notifications.models import Notification
+from core.apps.workspaces.services import (
+    add_workspace_member,
+    create_workspace,
+    update_workspace,
+)
 
 from . import serializers
 from .models import Workspace
-from .services import create_workspace, get_workspaces_list
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 @swagger_auto_schema(
@@ -26,12 +32,13 @@ from .services import create_workspace, get_workspaces_list
 @permission_classes([IsAuthenticated])
 def get_create_workspaces(request):
     if request.method == "GET":
-        workspaces = get_workspaces_list()
+        workspaces = Workspace.objects.all()
         workspace_serializer = serializers.WorkspaceSerializer(workspaces, many=True)
         return Response(workspace_serializer.data)
 
     saved_workspace = create_workspace(request)
     workspace_output = serializers.WorkspaceSerializer(saved_workspace).data
+    from core.apps.common.services import send_notification
 
     send_notification(
         user=request.user,
@@ -63,15 +70,8 @@ def workspace_detail_delete_patch(request, workspace_id):
         )
         return Response(workspace_serializer.data)
     if request.method == "PATCH":
-        workspace_serializer = serializers.WorkspaceUpdateSerializer(
-            workspace,
-            data=request.data,
-            partial=True,
-        )
-        workspace_serializer.is_valid(raise_exception=True)
-        workspace_serializer.save()
-
-        output = serializers.WorkspaceDetailSerializer(workspace)
+        updated = update_workspace(workspace, request)
+        output = serializers.WorkspaceDetailSerializer(updated)
         return Response(output.data)
 
     workspace.delete()
@@ -98,11 +98,6 @@ def get_or_create_workspace_members(request, workspace_id):
         members_serializer = serializers.WorkspaceMemeberSerializer(members, many=True)
         return Response(members_serializer.data)
 
-    serializer = serializers.WorkspaceMemberCreateSerializer(
-        data=request.data,
-        context={"workspace": workspace},
-    )
-    serializer.is_valid(raise_exception=True)
-    output = serializer.save()
+    output = add_workspace_member(workspace, request)
     output = serializers.WorkspaceMemeberSerializer(output)
     return Response(output.data)
